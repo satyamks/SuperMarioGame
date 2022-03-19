@@ -2,6 +2,7 @@ package com.android.game;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -25,7 +26,7 @@ public class SuperMario extends ApplicationAdapter {
 	int manX;
 	int manY;
 	Rectangle manRectangle;
-	int gold = 0;
+	int score = 0;
 	int energy = 1;
 	int gameState = 0;
 	BitmapFont fontGold;
@@ -50,21 +51,27 @@ public class SuperMario extends ApplicationAdapter {
 	Texture macD;
 	Texture bomb;
 	Texture redBullCloud;
+	Sound beforeGameStartSound;
+	Sound coinCollisionSound;
+	Sound bombCollisionSound;
+	Sound adCharacterCollisionSound;
+	Sound gameOverSound;
+	int beforeGameStartSoundCounter = 1;
 	Random random;
 	int coinTimer = 0;
 	int bombTimer = 0;
 	int redBullTimer = 0;
 	int macDTimer = 0;
 	int redBullCloudTimer = 0;
-	int newCoinWaitCount = 500;
+	int newCoinWaitCount = 400;
 	int newBombWaitCount = 500;
 	int newRedBullWaitCount = 700;
-	int newMacDWaitCount = 700;
+	int newMacDWaitCount = 800;
 	int newRedBullCloudWaitCount = 1000;
-	int coinSpeed = 5;
-	int bombSpeed = 5;
-	int redBullSpeed = 5;
-	int macDSpeed = 5;
+	int coinSpeed = 6;
+	int bombSpeed = 6;
+	int redBullSpeed = 6;
+	int macDSpeed = 6;
 	int redBullCloudSpeed = 2;
 
 
@@ -85,6 +92,11 @@ public class SuperMario extends ApplicationAdapter {
 		macD = new Texture("mac-d.png");
 		bomb = new Texture("bomb.png");
 		redBullCloud = new Texture("redbull-clouds-overlay.png");
+		beforeGameStartSound = Gdx.audio.newSound(Gdx.files.internal("before-game-start.wav"));
+		coinCollisionSound = Gdx.audio.newSound(Gdx.files.internal("coin-collision.wav"));
+		bombCollisionSound = Gdx.audio.newSound(Gdx.files.internal("bomb-collision.wav"));
+		adCharacterCollisionSound = Gdx.audio.newSound(Gdx.files.internal("ad-character-collision.wav"));
+		gameOverSound = Gdx.audio.newSound(Gdx.files.internal("game-over.wav"));
 		random = new Random();
 		fontGold = new BitmapFont();
 		fontEnergy = new BitmapFont();
@@ -101,6 +113,10 @@ public class SuperMario extends ApplicationAdapter {
 
 		if (gameState == 0) {
 			//Waiting for game to start
+			if (beforeGameStartSoundCounter <= 1) {
+				beforeGameStartSound.play();
+				beforeGameStartSoundCounter++;
+			}
 			if (Gdx.input.justTouched()) {
 				gameState = 1;
 			}
@@ -140,7 +156,7 @@ public class SuperMario extends ApplicationAdapter {
 		handleAdCharacterCollision(redBullRectangles, redBullXs, redBullYs);
 		handleAdCharacterCollision(macDRectangles, macDXs, macDYs);
 
-		fontGold.draw(batch, "Score: " + gold, 100, 2000);
+		fontGold.draw(batch, "Score: " + score, 100, 2000);
 		fontEnergy.draw(batch, "Energy: " + energy, 100, 1900);
 
 		batch.end();
@@ -209,7 +225,8 @@ public class SuperMario extends ApplicationAdapter {
 	public void handleCoinCollision() {
 		for (int i = 0; i < coinRectangles.size(); i++) {
 			if (Intersector.overlaps(manRectangle, coinRectangles.get(i))) {
-				gold++;
+				score++;
+				coinCollisionSound.play();
 				coinRectangles.remove(i);
 				coinXs.remove(i);
 				coinYs.remove(i);
@@ -227,9 +244,10 @@ public class SuperMario extends ApplicationAdapter {
 				bombYs.remove(i);
 				if (energy <= 0) {
 					gameState = 2;
-				}
-				if (gameState == 2) {
 					energy = 0;
+					gameOverSound.play();
+				} else {
+					bombCollisionSound.play();
 				}
 			}
 		}
@@ -241,6 +259,7 @@ public class SuperMario extends ApplicationAdapter {
 		for (int i = 0; i < adCharacterRectangles.size(); i++) {
 			if (Intersector.overlaps(manRectangle, adCharacterRectangles.get(i))) {
 				energy++;
+				adCharacterCollisionSound.play();
 				adCharacterRectangles.remove(i);
 				adCharacterXs.remove(i);
 				adCharacterYs.remove(i);
@@ -260,7 +279,7 @@ public class SuperMario extends ApplicationAdapter {
 		if (Gdx.input.justTouched()) {
 			gameState = 1;
 			manY = Gdx.graphics.getHeight()/2;
-			gold = 0;
+			score = 0;
 			energy = 1;
 			velocity = 0;
 			coinXs.clear();
@@ -278,6 +297,7 @@ public class SuperMario extends ApplicationAdapter {
 			redBullCloudXs.clear();
 			redBullCloudYs.clear();
 			redBullCloudRectangles.clear();
+			beforeGameStartSoundCounter = 1;
 		}
 	}
 	
